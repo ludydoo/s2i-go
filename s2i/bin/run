@@ -1,0 +1,3 @@
+#!/bin/bash 
+set -e 
+exec /opt/app-root/go/src/github.com/ludydoo/bla/goexec

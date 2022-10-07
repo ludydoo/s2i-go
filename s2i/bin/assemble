@@ -1,0 +1,36 @@
+#!/bin/bash -e
+if [[ "$1" == "-h" ]]; then
+	exec /usr/libexec/s2i/usage
+fi
+
+echo "---> Creating directories..."
+echo "-------> OPENSHIFT_BUILD_SOURCE=${OPENSHIFT_BUILD_SOURCE}"
+
+export GO_REPO=$(echo $OPENSHIFT_BUILD_SOURCE | sed --expression='s/\.git//g' | sed --expression='s/https:\/\///g')
+echo "-------> GO_REPO=${GO_REPO}"
+
+mkdir -p $GOPATH/src/$GO_REPO
+
+if [ "$(ls /opt/app-root/destination/artifacts/opt/app-root/vendor/ 2>/dev/null)" ]; then
+    echo "---> Restoring vendor artifacts..."
+    echo "-------> Using vendor artifacts from previous build into $GOPATH/src/$GO_REPO/vendor"
+    ls /opt/app-root/destination/artifacts/opt/app-root/vendor
+    mv /opt/app-root/destination/artifacts/opt/app-root/vendor $GOPATH/src/$GO_REPO/vendor
+fi
+
+if [ "$(ls /opt/app-root/destination/artifacts/opt/app-root/go/ 2>/dev/null)" ]; then
+    echo "---> Restoring package artifacts..."
+    echo "-------> Using package artifacts from previous build into $GOPATH"
+    ls /opt/app-root/destination/artifacts/opt/app-root/go
+    mv /opt/app-root/destination/artifacts/opt/app-root/go $GOPATH
+fi
+
+echo "---> Installing application source..."
+# Copy the source
+cp -ar /opt/app-root/destination/src/* $GOPATH/src/$GO_REPO
+rm -rf /opt/app-root/destination/src/*
+
+echo "---> Building application from source..."
+pushd $GOPATH/src/$GO_REPO
+go build -o goexec
+popd
